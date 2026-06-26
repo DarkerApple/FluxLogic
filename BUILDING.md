@@ -141,9 +141,10 @@ under *Options → Controls → FluxLogic*). If you also want it in **Mod Menu**
 mod list, add this:
 
 **`build.gradle`** — add a Mod Menu dependency (use the build matching 26.2 from
-<https://modrinth.com/mod/modmenu/versions>):
+<https://modrinth.com/mod/modmenu/versions>). Note the new no-remap Loom uses
+plain `implementation`, not `modImplementation`:
 ```gradle
-modImplementation "com.terraformersmc:modmenu:<VERSION_FOR_26_2>"
+implementation "com.terraformersmc:modmenu:<VERSION_FOR_26_2>"
 ```
 
 **`src/client/java/com/fluxlogic/gui/ModMenuIntegration.java`** — create:
@@ -209,10 +210,17 @@ Loom is fetching MC + mappings. On a flaky connection, just re-run `./gradlew
 build` — it resumes from cache. Behind a proxy, set `HTTPS_PROXY` and Gradle's
 `systemProp.https.proxyHost/Port`.
 
-**`Could not resolve fabric-api 0.153.0+26.2`**
+**`Failed to find official mojang mappings for 26.2`**
+You have a `mappings loom.officialMojangMappings()` line in `build.gradle`'s
+dependencies. **Remove it.** Minecraft 26.x uses the new no-remap Loom flow
+(plugin id `net.fabricmc.fabric-loom`) and develops directly against Mojang's
+names, so there is **no `mappings` dependency at all** — adding one causes this
+error. (This is already fixed in the committed `build.gradle`.)
+
+**`Could not resolve fabric-api 0.152.2+26.2`**
 That exact build wasn't found. Check the current 26.2 Fabric API version at
 <https://modrinth.com/mod/fabric-api/versions> and update `fabric_api_version`
-in `gradle.properties`. Same idea for `loader_version`.
+in `gradle.properties`. Same idea for `loader_version` and `loom_version`.
 
 **Mixin "could not find method setRotation"**
 Expected if Mojang renamed it; it's `require=0` so it's a warning, not a crash.

@@ -120,7 +120,7 @@ highlight in place. Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 ## Install (once you've built it)
 
 1. Install **Fabric Loader 0.19.3+** for Minecraft 26.2.
-2. Install **[Fabric API](https://modrinth.com/mod/fabric-api)** (0.153.0+26.2).
+2. Install **[Fabric API](https://modrinth.com/mod/fabric-api)** (0.152.2+26.2 or newer).
 3. Drop `fluxlogic-0.1.0.jar` into your `mods/` folder.
 4. (Recommended) Run it **alongside Sodium + Iris** — FluxLogic handles comfort,
    adaptation and tactical clarity; they handle raw rendering. Best of both.

@@ -1,8 +1,9 @@
 plugins {
-    // Loom 1.17 introduces the new `fabric-loom` id. Unlike the old
-    // `fabric-loom`/`fabric-loom-remap` plugins it does NOT remap Minecraft
-    // or mods — 26.x is developed directly against official Mojang mappings.
-    id 'fabric-loom' version '1.17-SNAPSHOT'
+    // Minecraft 26.x uses the new `net.fabricmc.fabric-loom` plugin. Unlike the
+    // old `fabric-loom`/`fabric-loom-remap` plugins it does NOT remap Minecraft
+    // or mods — the game is developed directly against Mojang's names, so there
+    // is no separate `mappings` dependency (see the dependencies block below).
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
 
 version = project.mod_version
@@ -24,19 +25,22 @@ repositories {
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
-    // 26.x flow: develop directly against Mojang's official, readable mappings.
-    // No Yarn, no remap step.
-    mappings loom.officialMojangMappings()
+    // NOTE: no `mappings` line. The new no-remap Loom for 26.x develops directly
+    // against Mojang's names; adding `loom.officialMojangMappings()` here is what
+    // triggers "Failed to find official mojang mappings for 26.2".
 
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    // Plain `implementation` (not `modImplementation`) — with no remap step the
+    // mod dependencies don't need Loom's remapping configuration. This mirrors
+    // Fabric's official 26.2 example mod.
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     // ---- OPTIONAL integrations -------------------------------------------
-    // Compile against Mod Menu so our config screen shows up in its list,
-    // but keep it a soft dependency at runtime (see fabric.mod.json "suggests").
+    // Compile against Mod Menu so our config screen shows up in its list, but
+    // keep it a soft dependency at runtime (see fabric.mod.json "suggests").
     // Pin a 26.2-compatible build when you wire this in; left commented so a
     // fresh checkout builds without reaching for an exact ModMenu version.
-    // modImplementation "com.terraformersmc:modmenu:VERSION_FOR_26_2"
+    // implementation "com.terraformersmc:modmenu:VERSION_FOR_26_2"
 }
 
 loom {
