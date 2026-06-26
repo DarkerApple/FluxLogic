@@ -182,9 +182,24 @@ environment that generated it. The code uses long-stable Mojang-mapped names, bu
 **before trusting the jar, open the 26.2 sources in your IDE** (§5) and confirm
 the items below. Each is a one-line fix if a name drifted.
 
+### Fastest way: dump the real signatures
+
+Because 26.2 ships **unobfuscated**, the real names are in the jar Loom just
+downloaded. Run the bundled script and you'll see every signature FluxLogic
+calls, straight from the game:
+
+```bash
+./gradlew build --refresh-dependencies   # ok if compile fails; we just need the jar cached
+./scripts/verify-26.2-api.sh             # prints the exact 26.2 method/field signatures
+```
+
+Compare its output to the table below (or paste it to the author) and fix any
+that differ. This turns "guess and check" into a single pass.
+
 | Where | What to confirm | If it changed |
 |---|---|---|
 | `mixin/client/CameraMixin.java` | `Camera#setRotation(float,float)` and `Camera#setPosition(double,double,double)` still exist | update the `method=` descriptors. (Uses `require=0`, so a mismatch just disables camera smoothing — it won't crash.) |
+| `mixin/client/MouseInputMixin.java` | `Entity#turn(double,double)` still exists | update the `method=` descriptor (also `require=0`) |
 | `presets/PresetManager.java` | `Options` accessors: `renderDistance()`, `simulationDistance()`, `entityDistanceScaling()`, `graphicsMode()`, `particles()`, `cloudStatus()`, `entityShadows()`, `bobView()`, `framerateLimit()` and the enums `GraphicsStatus`/`ParticleStatus`/`CloudStatus` | adjust the accessor/enum names |
 | `combat/CombatTracker.java` | `Minecraft#crosshairPickEntity`, `Options#keyAttack`, `Mob`, `Enemy` marker, `Level#getEntitiesOfClass(...)` | adjust field/method names |
 | `combat/TacticalVision.java` | `Entity#setGlowingTag(boolean)`, `Scoreboard` (`getPlayerTeam`, `addPlayerTeam`, `getPlayersTeam`, `addPlayerToTeam`), `PlayerTeam#setColor` | adjust names |

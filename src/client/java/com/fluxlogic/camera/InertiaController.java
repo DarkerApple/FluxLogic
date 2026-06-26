@@ -37,7 +37,50 @@ public final class InertiaController {
     private double lastRawY = Double.NaN;
     private boolean yInit;
 
+    // mouse-input filtering state (separate from view smoothing)
+    private double smoothedDX;
+    private double smoothedDY;
+
     private long lastNanos = 0L;
+
+    /**
+     * Filter a single raw mouse-look delta before it becomes player rotation.
+     *
+     * <p>This is the "kill the micro-jitters from your mouse" feature. Two
+     * stages, both off by default (so aim is untouched until you opt in):
+     * <ul>
+     *   <li><b>Soft deadzone</b> — deltas below {@code mouseDeadzone} are eased
+     *       toward zero (quadratic, no hard cliff), removing sensor noise while
+     *       preserving deliberate small movements.</li>
+     *   <li><b>Low-pass</b> — an optional exponential blend that smooths the
+     *       delta stream. Adds a touch of aim latency, so it's opt-in.</li>
+     * </ul>
+     *
+     * @param delta raw look delta for this axis this frame
+     * @param yaw   true for the horizontal axis, false for vertical
+     */
+    public double filterMouseDelta(double delta, boolean yaw) {
+        FluxConfig.Camera c = ConfigManager.get().camera;
+        if (!c.enabled) {
+            return delta;
+        }
+        double out = delta;
+        if (c.mouseDeadzone > 0.0) {
+            out = FastMath.softDeadzone(out, c.mouseDeadzone);
+        }
+        if (c.mouseSmoothing > 0.0f) {
+            // Blend toward the previous value; clamp so it can never fully stall.
+            float a = FastMath.clamp(c.mouseSmoothing, 0.0f, 0.95f);
+            if (yaw) {
+                smoothedDX = FastMath.lerp(out, smoothedDX, a);
+                out = smoothedDX;
+            } else {
+                smoothedDY = FastMath.lerp(out, smoothedDY, a);
+                out = smoothedDY;
+            }
+        }
+        return out;
+    }
 
     /** Per-frame delta time in seconds, clamped to sane bounds. */
     private float computeDt() {

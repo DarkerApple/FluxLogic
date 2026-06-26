@@ -140,8 +140,9 @@ OpenGL today and under Mojang's Vulkan toggle later.
 
 ```
 FluxLogicClient          entrypoint; registers tick + keybind, holds managers
-  camera/InertiaController   the smooth-camera math (pure, testable)
-  mixin/client/CameraMixin   the ONE render hook (require=0, self-disabling)
+  camera/InertiaController   the smooth-camera + mouse-filter math (pure, testable)
+  mixin/client/CameraMixin   the ONE render hook: view smoothing (require=0)
+  mixin/client/MouseInputMixin  input hook: mouse-jitter filter (require=0)
   presets/
     GameContext              COMBAT/EXPLORATION/IDLE + pure resolver (testable)
     PerformancePreset        decoupled data model of the options we drive

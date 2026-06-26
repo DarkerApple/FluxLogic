@@ -4,7 +4,8 @@
   "package": "com.fluxlogic.mixin.client",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "CameraMixin"
+    "CameraMixin",
+    "MouseInputMixin"
   ],
   "injectors": {
     "defaultRequire": 1
