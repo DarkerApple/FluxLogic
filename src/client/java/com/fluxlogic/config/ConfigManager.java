@@ -1,0 +1,105 @@
+package com.fluxlogic.config;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import net.fabricmc.loader.api.FabricLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
+
+/**
+ * Loads/saves {@code config/fluxlogic.json} and holds the live config.
+ *
+ * <p>Hot-reload friendly: the active config is held behind an
+ * {@link AtomicReference} so the settings screen can swap in a freshly edited
+ * instance without the tick thread ever seeing a half-written object.
+ */
+public final class ConfigManager {
+
+    public static final Logger LOG = LoggerFactory.getLogger("FluxLogic");
+
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .create();
+
+    private static final AtomicReference<FluxConfig> ACTIVE = new AtomicReference<>(new FluxConfig());
+
+    private ConfigManager() {}
+
+    private static Path configPath() {
+        return FabricLoader.getInstance().getConfigDir().resolve("fluxlogic.json");
+    }
+
+    /** Read config from disk, writing defaults if the file is missing/corrupt. */
+    public static void load() {
+        Path path = configPath();
+        if (Files.notExists(path)) {
+            ACTIVE.set(new FluxConfig());
+            save();
+            LOG.info("[FluxLogic] Wrote default config to {}", path);
+            return;
+        }
+        try {
+            String json = Files.readString(path);
+            FluxConfig parsed = GSON.fromJson(json, FluxConfig.class);
+            if (parsed == null) {
+                throw new IOException("config parsed to null");
+            }
+            ACTIVE.set(migrate(parsed));
+            LOG.info("[FluxLogic] Loaded config from {}", path);
+        } catch (Exception e) {
+            // Never let a bad config brick the client — back it up and reset.
+            LOG.warn("[FluxLogic] Failed to read config ({}); regenerating defaults", e.toString());
+            backupCorrupt(path);
+            ACTIVE.set(new FluxConfig());
+            save();
+        }
+    }
+
+    /** Persist the active config to disk (pretty-printed JSON). */
+    public static void save() {
+        Path path = configPath();
+        try {
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, GSON.toJson(ACTIVE.get()));
+        } catch (IOException e) {
+            LOG.error("[FluxLogic] Could not save config to {}", path, e);
+        }
+    }
+
+    /** The live, read-mostly config. Safe to call every tick. */
+    public static FluxConfig get() {
+        return ACTIVE.get();
+    }
+
+    /** Swap in an edited config (called by the settings screen on apply). */
+    public static void replace(FluxConfig edited) {
+        ACTIVE.set(edited);
+        save();
+    }
+
+    // -------------------------------------------------------------- internals
+
+    private static FluxConfig migrate(FluxConfig cfg) {
+        // Future schema bumps slot in here. v1 is the baseline.
+        if (cfg.configVersion < 1) {
+            cfg.configVersion = 1;
+        }
+        return cfg;
+    }
+
+    private static void backupCorrupt(Path path) {
+        try {
+            Path bak = path.resolveSibling("fluxlogic.json.bak");
+            Files.deleteIfExists(bak);
+            Files.move(path, bak);
+        } catch (IOException ignored) {
+            // best-effort
+        }
+    }
+}

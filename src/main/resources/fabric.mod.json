@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "fluxlogic",
+  "version": "${version}",
+  "name": "FluxLogic",
+  "description": "A client-side adaptive performance & comfort layer for Minecraft. Smooths the camera (Inertia!), adapts settings to what you're doing (combat-aware presets), and adds tactical mob highlighting — all without replacing the renderer, so it stacks cleanly with Sodium, Iris and VulkanMod.",
+  "authors": [
+    "darkerapple"
+  ],
+  "contact": {
+    "homepage": "https://github.com/darkerapple/fluxlogic",
+    "sources": "https://github.com/darkerapple/fluxlogic",
+    "issues": "https://github.com/darkerapple/fluxlogic/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/fluxlogic/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.fluxlogic.FluxLogicClient"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "fluxlogic.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "sodium": "*",
+    "iris": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://github.com/darkerapple/fluxlogic"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "__comment": "FluxLogic 'tactical vision' background desaturation. Classic post-chain format. EXPERIMENTAL: 26.2's core-shader pipeline may require porting this to the new post format — see ARCHITECTURE.md. The mod loads it best-effort and silently degrades to glow-only highlighting if the format/API doesn't match.",
+  "targets": [
+    "swap"
+  ],
+  "passes": [
+    {
+      "name": "fluxlogic_desaturate",
+      "intarget": "minecraft:main",
+      "outtarget": "swap",
+      "uniforms": [
+        { "name": "Strength", "values": [ 0.6 ] }
+      ]
+    },
+    {
+      "name": "blit",
+      "intarget": "swap",
+      "outtarget": "minecraft:main"
+    }
+  ]
+}

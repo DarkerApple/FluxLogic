@@ -1,0 +1,6 @@
+{
+  "key.categories.fluxlogic": "FluxLogic",
+  "key.fluxlogic.open_config": "Open FluxLogic Settings",
+  "fluxlogic.config.title": "FluxLogic",
+  "fluxlogic.config.note": "Full control lives in config/fluxlogic.json"
+}

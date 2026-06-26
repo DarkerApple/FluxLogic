@@ -1,0 +1,16 @@
+pluginManagement {
+    repositories {
+        // Fabric's Maven hosts the Loom plugin used to build mods.
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+// The Loom plugin itself is applied (with its version) in build.gradle —
+// declaring the version here as well would clash. Keep settings to repos only.
+
+rootProject.name = 'FluxLogic'

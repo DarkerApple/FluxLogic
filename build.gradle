@@ -1,0 +1,99 @@
+plugins {
+    // Loom 1.17 introduces the new `fabric-loom` id. Unlike the old
+    // `fabric-loom`/`fabric-loom-remap` plugins it does NOT remap Minecraft
+    // or mods — 26.x is developed directly against official Mojang mappings.
+    id 'fabric-loom' version '1.17-SNAPSHOT'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Most third-party Fabric mods (Sodium, Iris, ModMenu, …) publish to
+    // Modrinth's and/or Maven Central. We only need these for *optional*
+    // compile-time integration; FluxLogic has no hard dependency on them.
+    maven { url = 'https://api.modrinth.com/maven' }       // Modrinth mods
+    maven { url = 'https://maven.terraformersmc.com/' }    // Mod Menu
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+    // 26.x flow: develop directly against Mojang's official, readable mappings.
+    // No Yarn, no remap step.
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // ---- OPTIONAL integrations -------------------------------------------
+    // Compile against Mod Menu so our config screen shows up in its list,
+    // but keep it a soft dependency at runtime (see fabric.mod.json "suggests").
+    // Pin a 26.2-compatible build when you wire this in; left commented so a
+    // fresh checkout builds without reaching for an exact ModMenu version.
+    // modImplementation "com.terraformersmc:modmenu:VERSION_FOR_26_2"
+}
+
+loom {
+    // We are a client-only mod. Splitting the source set keeps server-only
+    // accidents out of the client jar and documents intent.
+    splitEnvironmentSourceSets()
+
+    mods {
+        "fluxlogic" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+
+    runs {
+        client {
+            client()
+            ideConfigGenerated true
+            runDir "run"
+        }
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "loader_version", project.loader_version
+    inputs.property "fabric_api_version", project.fabric_api_version
+
+    // Inject pinned versions into fabric.mod.json so metadata and gradle
+    // never drift apart.
+    filesMatching("fabric.mod.json") {
+        expand(
+            "version": project.version,
+            "loader_version": project.loader_version,
+            "fabric_api_version": project.fabric_api_version
+        )
+    }
+}
+
+java {
+    // 26.2 requires Java 25. The toolchain block makes Gradle download/select
+    // a JDK 25 even if your default `java` is older — see BUILDING.md.
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(Integer.parseInt(project.java_version))
+    }
+
+    // Ship sources so downstream modders can read FluxLogic's hooks.
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = Integer.parseInt(project.java_version)
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archivesName.get()}" }
+    }
+}

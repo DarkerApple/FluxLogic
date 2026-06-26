@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# Loom / Fabric generated
+run/
+.fabric/
+*.log
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+eclipse/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / harness local settings
+.claude/settings.local.json
+
+# Keep the Gradle wrapper jar (intentionally committed)
+!gradle/wrapper/gradle-wrapper.jar
