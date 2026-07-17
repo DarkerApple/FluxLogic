@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -87,7 +86,8 @@ public final class TacticalVision {
         double r = Math.max(cfg.presets.hostileScanRadius, cfg.performance.entityCullDistance);
         AABB box = player.getBoundingBox().inflate(r);
 
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && e != player)) {
+        // No player exclusion needed: Player is not a Mob subclass.
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, box, LivingEntity::isAlive)) {
             boolean hostile = mob instanceof Enemy;
             boolean essential = cfg.tactical.highlightEssentials && isEssential(mob, cfg);
 
@@ -155,7 +155,9 @@ public final class TacticalVision {
     }
 
     private boolean isEssential(Entity e, FluxConfig cfg) {
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+        // `var` on purpose: the id type was repackaged in 26.x, and all we need
+        // is its canonical "namespace:path" string form.
+        var id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return id != null && cfg.tactical.essentialEntities.contains(id.toString());
     }
 
