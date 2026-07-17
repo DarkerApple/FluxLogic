@@ -90,6 +90,11 @@ public final class ConfigManager {
         if (cfg.configVersion < 1) {
             cfg.configVersion = 1;
         }
+        // Sections added after a user's file was written deserialise as null
+        // only when explicitly set to null in JSON — heal that to defaults.
+        if (cfg.input == null) {
+            cfg.input = new FluxConfig.Input();
+        }
         return cfg;
     }
 

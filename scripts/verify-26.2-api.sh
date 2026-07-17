@@ -37,6 +37,7 @@ echo
 TARGETS=$(cat <<'EOF'
 net.minecraft.client.Camera	setRotation|setPosition
 net.minecraft.world.entity.Entity	(^|[^a-zA-Z])turn\(|setGlowingTag|getScoreboardName|getType\(|distanceToSqr|getBoundingBox
+net.minecraft.client.MouseHandler	onMove|turnPlayer|handleAccumulatedMovement|xpos|ypos
 net.minecraft.client.Options	renderDistance|simulationDistance|entityDistanceScaling|graphicsMode|particles|cloudStatus|entityShadows|bobView|framerateLimit|keyAttack
 net.minecraft.client.Minecraft	crosshairPickEntity|gameRenderer|isPaused|setScreen|screen;|options;|player;|level;
 net.minecraft.world.scores.Scoreboard	getPlayerTeam|addPlayerTeam|getPlayersTeam|addPlayerToTeam

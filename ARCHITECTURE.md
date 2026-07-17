@@ -143,6 +143,8 @@ FluxLogicClient          entrypoint; registers tick + keybind, holds managers
   camera/InertiaController   the smooth-camera + mouse-filter math (pure, testable)
   mixin/client/CameraMixin   the ONE render hook: view smoothing (require=0)
   mixin/client/MouseInputMixin  input hook: mouse-jitter filter (require=0)
+  mixin/client/MouseStutterMixin  input hook: click-drag de-stutter (require=0)
+  input/MouseDeStutter       event-flood coalescer (pure gate core, testable)
   presets/
     GameContext              COMBAT/EXPLORATION/IDLE + pure resolver (testable)
     PerformancePreset        decoupled data model of the options we drive

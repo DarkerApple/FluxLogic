@@ -78,6 +78,11 @@ public final class FluxConfigScreen extends Screen {
                         (btn, val) -> cfg.camera.stairStepSmoothing = val));
         y += gap;
 
+        addRenderableWidget(CycleButton.onOffBuilder(cfg.input.stutterFix)
+                .create(x, y, w, 20, Component.literal("Mouse De-Stutter (click-drag fix)"),
+                        (btn, val) -> cfg.input.stutterFix = val));
+        y += gap;
+
         addRenderableWidget(CycleButton.onOffBuilder(cfg.presets.enabled)
                 .create(x, y, w, 20, Component.literal("Adaptive Presets"),
                         (btn, val) -> cfg.presets.enabled = val));

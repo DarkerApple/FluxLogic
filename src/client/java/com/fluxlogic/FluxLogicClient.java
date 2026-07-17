@@ -2,6 +2,7 @@ package com.fluxlogic;
 
 import com.fluxlogic.camera.InertiaController;
 import com.fluxlogic.combat.TacticalVision;
+import com.fluxlogic.input.MouseDeStutter;
 import com.fluxlogic.compat.ModCompat;
 import com.fluxlogic.config.ConfigManager;
 import com.fluxlogic.gui.FluxConfigScreen;
@@ -31,6 +32,7 @@ public final class FluxLogicClient implements ClientModInitializer {
     public static final String MOD_ID = "fluxlogic";
 
     private static final InertiaController INERTIA = new InertiaController();
+    private static final MouseDeStutter DE_STUTTER = new MouseDeStutter();
     private static final PresetManager PRESETS = new PresetManager();
     private static final TacticalVision TACTICAL = new TacticalVision();
 
@@ -38,6 +40,10 @@ public final class FluxLogicClient implements ClientModInitializer {
 
     public static InertiaController inertia() {
         return INERTIA;
+    }
+
+    public static MouseDeStutter deStutter() {
+        return DE_STUTTER;
     }
 
     @Override

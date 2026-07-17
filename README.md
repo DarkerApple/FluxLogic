@@ -62,6 +62,19 @@ FluxLogic chooses to *not* overlap them.
 - A **hard catch-up cap** so smoothing can never feel like input lag: fast flicks
   snap, slow pans glide. Tuned for comfort/accessibility (motion sickness).
 
+### 🖱️ Mouse De-Stutter — the "click-drag lag" fix
+- Fixes the classic **"game stutters/lags when I move the mouse while holding
+  left click"** problem. High-polling-rate mice (1000–8000 Hz) fire a GLFW
+  cursor event per hardware poll, and vanilla runs its full move handler —
+  including per-event screen-drag dispatch — for every single one.
+- FluxLogic **coalesces the flood**: movement is processed once per frame
+  (plus a configurable rate cap, default 1000/s), the same fix engines like
+  MonoGame apply for this class of bug.
+- **Loses zero input.** Deltas are computed from absolute cursor positions, so
+  skipped events fold exactly into the next processed one — total aim distance
+  is bit-identical, only redundant work is removed. On by default; toggle in
+  the settings screen (`Mouse De-Stutter`) or `input.stutterFix` in the config.
+
 ### ⚙️ Adaptive presets — performance you don't notice
 - Detects **Combat / Exploration / Idle** from health changes, nearby hostiles,
   attacks, and movement (with hysteresis so it never flickers).

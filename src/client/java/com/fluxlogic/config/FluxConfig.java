@@ -19,6 +19,7 @@ public final class FluxConfig {
     public int configVersion = 1;
 
     public Camera camera = new Camera();
+    public Input input = new Input();
     public Presets presets = new Presets();
     public Tactical tactical = new Tactical();
     public Performance performance = new Performance();
@@ -50,6 +51,29 @@ public final class FluxConfig {
 
         /** Hard safety cap so smoothing can never feel like input lag in PvP. */
         public float maxCatchUpDegreesPerTick = 50.0f;
+    }
+
+    // ------------------------------------------------------------------ Input
+    /**
+     * Raw input plumbing fixes — distinct from {@link Camera}'s feel filters.
+     */
+    public static final class Input {
+        /**
+         * Coalesce the GLFW cursor-move event flood from high-polling-rate
+         * mice (1000–8000 Hz) so movement is processed per frame, not per
+         * hardware poll. Fixes the "game stutters when I move the mouse while
+         * holding left click" bug. Loses no input: deltas are derived from
+         * absolute cursor positions, so skipped events fold into the next
+         * processed one exactly.
+         */
+        public boolean stutterFix = true;
+
+        /**
+         * Upper bound on cursor-move events actually processed per second
+         * (the rest are coalesced). Also the safety valve if the per-frame
+         * hook ever fails to apply. Clamped to 125–8000.
+         */
+        public int maxPollsPerSecond = 1000;
     }
 
     // ---------------------------------------------------------------- Presets
