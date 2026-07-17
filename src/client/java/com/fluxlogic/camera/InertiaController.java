@@ -33,7 +33,7 @@ public final class InertiaController {
     private float smoothedPitch;
     private boolean rotInit;
 
-    private double smoothedY;
+    private double stepOffset;
     private double lastRawY = Double.NaN;
     private boolean yInit;
 
@@ -41,7 +41,13 @@ public final class InertiaController {
     private double smoothedDX;
     private double smoothedDY;
 
-    private long lastNanos = 0L;
+    // Each smoothed channel keeps its OWN clock. A single shared timestamp is
+    // a subtle disaster: yaw reads a real ~16ms frame delta, then pitch —
+    // invoked microseconds later in the same frame — reads dt≈0, its smoothing
+    // factor collapses to ~0, and vertical look freezes.
+    private final FrameClock yawClock = new FrameClock();
+    private final FrameClock pitchClock = new FrameClock();
+    private final FrameClock stepClock = new FrameClock();
 
     /**
      * Filter a single raw mouse-look delta before it becomes player rotation.
@@ -82,17 +88,21 @@ public final class InertiaController {
         return out;
     }
 
-    /** Per-frame delta time in seconds, clamped to sane bounds. */
-    private float computeDt() {
-        long now = System.nanoTime();
-        if (lastNanos == 0L) {
+    /** Per-channel frame timer: delta time in seconds, clamped to sane bounds. */
+    private static final class FrameClock {
+        private long lastNanos = 0L;
+
+        float dt() {
+            long now = System.nanoTime();
+            if (lastNanos == 0L) {
+                lastNanos = now;
+                return 1.0f / 60.0f;
+            }
+            float dt = (float) ((now - lastNanos) / 1_000_000_000.0);
             lastNanos = now;
-            return 1.0f / 60.0f;
+            // Clamp to avoid huge jumps after a stall/pause.
+            return FastMath.clamp(dt, 1.0f / 1000.0f, 1.0f / 10.0f);
         }
-        float dt = (float) ((now - lastNanos) / 1_000_000_000.0);
-        lastNanos = now;
-        // Clamp to avoid huge jumps after a stall/pause.
-        return FastMath.clamp(dt, 1.0f / 1000.0f, 1.0f / 10.0f);
     }
 
     /** Smooth the camera yaw toward {@code rawYaw} (degrees). */
@@ -108,7 +118,7 @@ public final class InertiaController {
             rotInit = true;
             return rawYaw;
         }
-        float dt = computeDt();
+        float dt = yawClock.dt();
         // shortest-path delta
         float delta = FastMath.wrapDegrees(rawYaw - smoothedYaw);
         float k = FastMath.smoothingFactor(c.yawHalfLife, dt);
@@ -139,7 +149,7 @@ public final class InertiaController {
             smoothedPitch = rawPitch;
             return rawPitch;
         }
-        float dt = computeDt();
+        float dt = pitchClock.dt();
         float delta = rawPitch - smoothedPitch;
         float k = FastMath.smoothingFactor(c.pitchHalfLife, dt);
         float step = delta * k;
@@ -157,20 +167,20 @@ public final class InertiaController {
     /**
      * Ease the camera's vertical position when auto-stepping up blocks.
      *
-     * <p>Heuristic: a "step" is a small (~0.4–1.05 block) sudden upward jump in
-     * one frame. Those get eased; everything else (jumping, falling, smooth
-     * walking) is passed through untouched so we never add vertical lag.
+     * <p>A stair-step is an <em>instant</em> vertical snap: ~0.4–1.05 blocks in
+     * a single frame. When one is detected, the snap is absorbed into
+     * {@code stepOffset}, which then decays to zero — so the camera glides up
+     * instead of teleporting. All continuous motion (jumping ≈ 0.1 blocks/frame
+     * at 60 FPS, falling, elytra) passes through 1:1, untouched.
+     *
+     * <p>This replaces an earlier always-lerp design that trailed every
+     * vertical move by up to 1.25 blocks and misread jumps as steps — which
+     * felt like broken physics.
      */
     public double smoothStepY(double rawY) {
         FluxConfig.Camera c = ConfigManager.get().camera;
-        if (!c.enabled || !c.stairStepSmoothing || c.stairStepHalfLife <= 0f) {
-            smoothedY = rawY;
-            lastRawY = rawY;
-            yInit = true;
-            return rawY;
-        }
-        if (!yInit) {
-            smoothedY = rawY;
+        if (!c.enabled || !c.stairStepSmoothing || c.stairStepHalfLife <= 0f || !yInit) {
+            stepOffset = 0.0;
             lastRawY = rawY;
             yInit = true;
             return rawY;
@@ -179,17 +189,24 @@ public final class InertiaController {
         double frameDelta = rawY - lastRawY;
         lastRawY = rawY;
 
-        boolean isStep = frameDelta > 0.05 && frameDelta < 1.05;
-        if (!isStep && Math.abs(rawY - smoothedY) > 1.25) {
-            // teleport / big motion — resync, no easing
-            smoothedY = rawY;
+        if (frameDelta > 0.35 && frameDelta < 1.05) {
+            // Instant snap detected — absorb it, capped so sprinting up stairs
+            // can't accumulate a huge trailing offset.
+            stepOffset = Math.min(stepOffset + frameDelta, 1.05);
+        } else if (Math.abs(frameDelta) > 1.05) {
+            // Teleport / dimension change — resync, no easing.
+            stepOffset = 0.0;
             return rawY;
         }
 
-        float dt = computeDt();
-        float k = FastMath.smoothingFactor(c.stairStepHalfLife, dt);
-        smoothedY = FastMath.lerp(smoothedY, rawY, k);
-        return smoothedY;
+        if (stepOffset > 0.0) {
+            float k = FastMath.smoothingFactor(c.stairStepHalfLife, stepClock.dt());
+            stepOffset *= (1.0 - k);
+            if (stepOffset < 0.005) {
+                stepOffset = 0.0;
+            }
+        }
+        return rawY - stepOffset;
     }
 
     private static float wrap360(float deg) {

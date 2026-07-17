@@ -16,7 +16,7 @@ import java.util.List;
 public final class FluxConfig {
 
     /** Bump when the schema changes so {@link ConfigManager} can migrate. */
-    public int configVersion = 1;
+    public int configVersion = 2;
 
     public Camera camera = new Camera();
     public Input input = new Input();
@@ -28,7 +28,8 @@ public final class FluxConfig {
     // ----------------------------------------------------------------- Camera
     /** "Inertia!" — the smooth-camera feature this mod grew out of. */
     public static final class Camera {
-        public boolean enabled = true;
+        /** Off by default (v2): camera feel changes must be a deliberate opt-in. */
+        public boolean enabled = false;
 
         /** Seconds for yaw to cover half the distance to the target. 0 = off. */
         public float yawHalfLife = 0.035f;
@@ -78,7 +79,8 @@ public final class FluxConfig {
 
     // ---------------------------------------------------------------- Presets
     public static final class Presets {
-        public boolean enabled = true;
+        /** Off by default (v2): opt in if you want adaptive video settings. */
+        public boolean enabled = false;
 
         /** Cross-fade time (seconds) when switching presets, to hide the change. */
         public float transitionSeconds = 0.6f;
@@ -99,7 +101,8 @@ public final class FluxConfig {
     // --------------------------------------------------------------- Tactical
     /** Combat "tactical vision": glow hostiles, optionally desaturate the world. */
     public static final class Tactical {
-        public boolean enabled = true;
+        /** Off by default (v2): opt in if you want combat highlighting. */
+        public boolean enabled = false;
 
         /** Outline hostile mobs while in COMBAT. Uses the engine's glow pass. */
         public boolean highlightHostiles = true;

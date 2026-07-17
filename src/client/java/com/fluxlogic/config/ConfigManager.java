@@ -50,7 +50,11 @@ public final class ConfigManager {
             if (parsed == null) {
                 throw new IOException("config parsed to null");
             }
+            int versionBefore = parsed.configVersion;
             ACTIVE.set(migrate(parsed));
+            if (parsed.configVersion != versionBefore) {
+                save(); // persist the migration so it runs exactly once
+            }
             LOG.info("[FluxLogic] Loaded config from {}", path);
         } catch (Exception e) {
             // Never let a bad config brick the client — back it up and reset.
@@ -86,9 +90,20 @@ public final class ConfigManager {
     // -------------------------------------------------------------- internals
 
     private static FluxConfig migrate(FluxConfig cfg) {
-        // Future schema bumps slot in here. v1 is the baseline.
-        if (cfg.configVersion < 1) {
-            cfg.configVersion = 1;
+        // v1 -> v2: the v1 scaffold shipped camera smoothing / adaptive presets
+        // / tactical vision ON by default, before they were ever runtime-tested
+        // on 26.2 — and the camera feature had real bugs (frozen pitch,
+        // jump rubber-banding). v2 makes every feel-changing feature opt-in;
+        // only the mouse de-stutter fix stays on. Users who had v1's forced
+        // defaults get reset to safe values; re-enable in the settings screen.
+        if (cfg.configVersion < 2) {
+            cfg.configVersion = 2;
+            cfg.camera.enabled = false;
+            cfg.presets.enabled = false;
+            cfg.tactical.enabled = false;
+            LOG.info("[FluxLogic] Config migrated to v2: camera smoothing, adaptive presets "
+                    + "and tactical vision are now opt-in (mouse de-stutter stays on). "
+                    + "Re-enable them in the FluxLogic settings screen if you want them.");
         }
         // Sections added after a user's file was written deserialise as null
         // only when explicitly set to null in JSON — heal that to defaults.

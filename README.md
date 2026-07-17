@@ -52,7 +52,13 @@ FluxLogic chooses to *not* overlap them.
 
 ## Features
 
-### 🎥 Inertia! — smooth camera
+> **Out of the box, only Mouse De-Stutter is active.** Camera smoothing,
+> adaptive presets and tactical vision change how the game *feels*, so they
+> are opt-in — flip them on in the FluxLogic settings screen when you want
+> them. (Configs from v1, which enabled them by default, are migrated to
+> off automatically.)
+
+### 🎥 Inertia! — smooth camera (opt-in)
 - Frame-rate-independent smoothing of camera yaw/pitch (identical feel at 30 or
   240 FPS).
 - **Mouse-jitter filtering** via a soft deadzone — kills sensor micro-noise
