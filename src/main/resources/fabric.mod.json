@@ -3,7 +3,7 @@
   "id": "fluxlogic",
   "version": "${version}",
   "name": "FluxLogic",
-  "description": "A client-side adaptive performance & comfort layer for Minecraft. Smooths the camera (Inertia!), adapts settings to what you're doing (combat-aware presets), and adds tactical mob highlighting — all without replacing the renderer, so it stacks cleanly with Sodium, Iris and VulkanMod.",
+  "description": "Fixes the 'game stutters when moving the mouse while holding a button' bug: coalesces the GLFW cursor-event flood from high-polling-rate mice so input is processed per frame instead of per hardware poll, losing zero movement.",
   "authors": [
     "darkerapple"
   ],
@@ -13,7 +13,6 @@
     "issues": "https://github.com/darkerapple/fluxlogic/issues"
   },
   "license": "MIT",
-  "icon": "assets/fluxlogic/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
@@ -33,9 +32,7 @@
     "fabric-api": "*"
   },
   "suggests": {
-    "modmenu": "*",
-    "sodium": "*",
-    "iris": "*"
+    "modmenu": "*"
   },
   "custom": {
     "modmenu": {

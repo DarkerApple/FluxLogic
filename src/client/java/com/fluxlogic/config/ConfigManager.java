@@ -90,23 +90,15 @@ public final class ConfigManager {
     // -------------------------------------------------------------- internals
 
     private static FluxConfig migrate(FluxConfig cfg) {
-        // v1 -> v2: the v1 scaffold shipped camera smoothing / adaptive presets
-        // / tactical vision ON by default, before they were ever runtime-tested
-        // on 26.2 — and the camera feature had real bugs (frozen pitch,
-        // jump rubber-banding). v2 makes every feel-changing feature opt-in;
-        // only the mouse de-stutter fix stays on. Users who had v1's forced
-        // defaults get reset to safe values; re-enable in the settings screen.
-        if (cfg.configVersion < 2) {
-            cfg.configVersion = 2;
-            cfg.camera.enabled = false;
-            cfg.presets.enabled = false;
-            cfg.tactical.enabled = false;
-            LOG.info("[FluxLogic] Config migrated to v2: camera smoothing, adaptive presets "
-                    + "and tactical vision are now opt-in (mouse de-stutter stays on). "
-                    + "Re-enable them in the FluxLogic settings screen if you want them.");
+        // v1/v2 -> v3: FluxLogic was slimmed down to the mouse de-stutter fix
+        // only. Old sections (camera/presets/tactical/...) are simply ignored
+        // on read; bumping the version re-saves the file in the new shape.
+        if (cfg.configVersion < 3) {
+            cfg.configVersion = 3;
+            LOG.info("[FluxLogic] Config migrated to v3 (stutter-fix-only schema).");
         }
-        // Sections added after a user's file was written deserialise as null
-        // only when explicitly set to null in JSON — heal that to defaults.
+        // A section explicitly set to null in JSON deserialises as null —
+        // heal that to defaults.
         if (cfg.input == null) {
             cfg.input = new FluxConfig.Input();
         }
