@@ -11,6 +11,7 @@ public final class FluxConfig {
     public int configVersion = 3;
 
     public Input input = new Input();
+    public Workarounds workarounds = new Workarounds();
 
     public static final class Input {
         /**
@@ -29,5 +30,16 @@ public final class FluxConfig {
          * hook ever fails to apply. Clamped to 125–8000.
          */
         public int maxPollsPerSecond = 1000;
+    }
+
+    /** Opt-in workarounds for platform bugs. All off by default. */
+    public static final class Workarounds {
+        /**
+         * Skip initialising the native narrator/TTS library entirely
+         * (vanilla loads it even with the narrator option off). For
+         * diagnosing 26.2-only stutter on macOS. Narration won't work
+         * while enabled.
+         */
+        public boolean disableNarrator = false;
     }
 }

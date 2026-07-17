@@ -28,6 +28,7 @@ public final class ConfigManager {
             .create();
 
     private static final AtomicReference<FluxConfig> ACTIVE = new AtomicReference<>(new FluxConfig());
+    private static volatile boolean loaded;
 
     private ConfigManager() {}
 
@@ -36,7 +37,8 @@ public final class ConfigManager {
     }
 
     /** Read config from disk, writing defaults if the file is missing/corrupt. */
-    public static void load() {
+    public static synchronized void load() {
+        loaded = true;
         Path path = configPath();
         if (Files.notExists(path)) {
             ACTIVE.set(new FluxConfig());
@@ -76,8 +78,17 @@ public final class ConfigManager {
         }
     }
 
-    /** The live, read-mostly config. Safe to call every tick. */
+    /**
+     * The live, read-mostly config. Safe to call every tick.
+     *
+     * <p>Lazy-loads on first use: some hooks (e.g. the narrator-init redirect)
+     * can fire during {@code Minecraft}'s constructor, possibly before the mod
+     * initializer has run — they must still see the user's saved settings.
+     */
     public static FluxConfig get() {
+        if (!loaded) {
+            load();
+        }
         return ACTIVE.get();
     }
 
@@ -98,9 +109,13 @@ public final class ConfigManager {
             LOG.info("[FluxLogic] Config migrated to v3 (stutter-fix-only schema).");
         }
         // A section explicitly set to null in JSON deserialises as null —
-        // heal that to defaults.
+        // heal that to defaults. (Also covers sections added after the user's
+        // file was first written.)
         if (cfg.input == null) {
             cfg.input = new FluxConfig.Input();
+        }
+        if (cfg.workarounds == null) {
+            cfg.workarounds = new FluxConfig.Workarounds();
         }
         return cfg;
     }

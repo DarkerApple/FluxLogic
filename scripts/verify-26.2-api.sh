@@ -49,5 +49,7 @@ dump "net.minecraft.client.gui.screens.Screen"        "extractRenderState|init\(
 dump "net.minecraft.client.gui.GuiGraphicsExtractor"  "centeredText|text\("
 dump "net.minecraft.resources.Identifier"             "fromNamespaceAndPath|toString"
 dump "net.minecraft.util.Util"                        "getPlatform"
+dump "net.minecraft.client.GameNarrator"              "Narrator|narrator"
+dump "com.mojang.text2speech.Narrator"                "."
 
 echo "Done. Paste everything above (from the first '==' line) back for signature lock-in."

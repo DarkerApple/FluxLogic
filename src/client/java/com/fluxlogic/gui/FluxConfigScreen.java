@@ -39,6 +39,12 @@ public final class FluxConfigScreen extends Screen {
                         (btn, val) -> cfg.input.stutterFix = val));
         y += gap;
 
+        // Applies at launch — needs a restart to take effect.
+        addRenderableWidget(CycleButton.onOffBuilder(cfg.workarounds.disableNarrator)
+                .create(x, y, w, 20, Component.literal("Disable Narrator/TTS lib (restart)"),
+                        (btn, val) -> cfg.workarounds.disableNarrator = val));
+        y += gap;
+
         addRenderableWidget(Button.builder(Component.literal("Open config file…"), b -> openConfig())
                 .bounds(x, y, w, 20).build());
         y += gap + 6;

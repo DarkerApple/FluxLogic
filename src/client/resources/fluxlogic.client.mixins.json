@@ -4,7 +4,8 @@
   "package": "com.fluxlogic.mixin.client",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "MouseStutterMixin"
+    "MouseStutterMixin",
+    "NarratorInitMixin"
   ],
   "injectors": {
     "defaultRequire": 1
