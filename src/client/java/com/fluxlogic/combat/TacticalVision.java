@@ -2,7 +2,6 @@ package com.fluxlogic.combat;
 
 import com.fluxlogic.config.ConfigManager;
 import com.fluxlogic.config.FluxConfig;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -14,8 +13,10 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.TeamColor;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -137,17 +138,18 @@ public final class TacticalVision {
     }
 
     private void ensureTeams(Scoreboard sb, FluxConfig cfg) {
-        ensureTeam(sb, TEAM_HOSTILE, nearestFormatting(cfg.tactical.hostileColor, ChatFormatting.RED));
-        ensureTeam(sb, TEAM_ESSENTIAL, nearestFormatting(cfg.tactical.essentialColor, ChatFormatting.AQUA));
+        ensureTeam(sb, TEAM_HOSTILE, nearestTeamColor(cfg.tactical.hostileColor, TeamColor.RED));
+        ensureTeam(sb, TEAM_ESSENTIAL, nearestTeamColor(cfg.tactical.essentialColor, TeamColor.AQUA));
     }
 
-    private void ensureTeam(Scoreboard sb, String name, ChatFormatting color) {
+    private void ensureTeam(Scoreboard sb, String name, TeamColor color) {
         try {
             PlayerTeam team = sb.getPlayerTeam(name);
             if (team == null) {
                 team = sb.addPlayerTeam(name);
             }
-            team.setColor(color);
+            // 26.2: team colour is Optional<TeamColor> (empty = "reset").
+            team.setColor(Optional.of(color));
             team.setSeeFriendlyInvisibles(false);
         } catch (Throwable t) {
             ConfigManager.LOG.debug("[FluxLogic] team setup failed: {}", t.toString());
@@ -175,18 +177,21 @@ public final class TacticalVision {
      * Map an "#RRGGBB" string to the nearest of the 16 vanilla team colours
      * (the engine's outline colour is team-driven, so we can't use arbitrary
      * RGB without a renderer mixin). Falls back to {@code fallback} on garbage.
+     *
+     * <p>26.2 note: team colours are the {@code TeamColor} enum now (colours
+     * only — no BOLD-style entries to skip), each carrying its RGB via
+     * {@code rgb()}.
      */
-    private static ChatFormatting nearestFormatting(String hex, ChatFormatting fallback) {
+    private static TeamColor nearestTeamColor(String hex, TeamColor fallback) {
         Integer rgb = parseHex(hex);
         if (rgb == null) {
             return fallback;
         }
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-        ChatFormatting best = fallback;
+        TeamColor best = fallback;
         int bestDist = Integer.MAX_VALUE;
-        for (ChatFormatting c : ChatFormatting.values()) {
-            Integer cc = c.getColor();
-            if (cc == null) continue; // skip styles like BOLD
+        for (TeamColor c : TeamColor.values()) {
+            int cc = c.rgb();
             int dr = ((cc >> 16) & 0xFF) - r;
             int dg = ((cc >> 8) & 0xFF) - g;
             int db = (cc & 0xFF) - b;

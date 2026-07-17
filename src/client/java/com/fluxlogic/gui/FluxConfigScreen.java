@@ -2,12 +2,12 @@ package com.fluxlogic.gui;
 
 import com.fluxlogic.config.ConfigManager;
 import com.fluxlogic.config.FluxConfig;
-import net.minecraft.Util;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Util;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
@@ -62,9 +62,11 @@ public final class FluxConfigScreen extends Screen {
         int y = 40;
         int gap = 24;
 
-        addRenderableWidget(CycleButton.<Smooth>builder(s -> Component.literal(s.label))
+        // 26.x: the initial value moved into builder(); withInitialValue is gone.
+        addRenderableWidget(CycleButton.builder(
+                        (Smooth s) -> Component.literal(s.label),
+                        Smooth.nearest(cfg.camera.yawHalfLife))
                 .withValues(Smooth.values())
-                .withInitialValue(Smooth.nearest(cfg.camera.yawHalfLife))
                 .create(x, y, w, 20, Component.literal("Inertia! Camera Smoothing"),
                         (btn, val) -> {
                             cfg.camera.enabled = val != Smooth.OFF;
@@ -123,19 +125,23 @@ public final class FluxConfigScreen extends Screen {
         }
     }
 
+    // 26.x GUI rework: Screen#render became extractRenderState, GuiGraphics
+    // became GuiGraphicsExtractor, drawCenteredString became centeredText,
+    // and text colours are full ARGB (alpha required, or the text is invisible).
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.title, this.width / 2, 18, 0xFFFFFF);
-        g.drawCenteredString(this.font,
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
+        g.centeredText(this.font, this.title, this.width / 2, 18, 0xFFFFFFFF);
+        g.centeredText(this.font,
                 Component.literal("Full control lives in config/fluxlogic.json"),
-                this.width / 2, this.height - 26, 0xA0A0A0);
+                this.width / 2, this.height - 26, 0xFFA0A0A0);
     }
 
     @Override
     public void onClose() {
         if (this.minecraft != null) {
-            this.minecraft.setScreen(parent);
+            // 26.x: the current screen is owned by Minecraft#gui.
+            this.minecraft.gui.setScreen(parent);
         }
     }
 }

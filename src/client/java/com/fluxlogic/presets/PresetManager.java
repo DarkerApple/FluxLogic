@@ -5,11 +5,11 @@ import com.fluxlogic.compat.ModCompat;
 import com.fluxlogic.config.ConfigManager;
 import com.fluxlogic.config.FluxConfig;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.GraphicsStatus;
+import net.minecraft.client.GraphicsPreset;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.server.level.ParticleStatus;
 
 /**
  * The adaptive-preset engine. Each client tick it resolves the
@@ -116,10 +116,12 @@ public final class PresetManager {
         Options o = mc.options;
 
         if (p.graphics != null) {
-            o.graphicsMode().set(switch (p.graphics) {
-                case FAST -> GraphicsStatus.FAST;
-                case FANCY -> GraphicsStatus.FANCY;
-                case FABULOUS -> GraphicsStatus.FABULOUS;
+            // 26.x renamed GraphicsStatus -> GraphicsPreset (+ a CUSTOM value
+            // we never set) and the accessor graphicsMode() -> graphicsPreset().
+            o.graphicsPreset().set(switch (p.graphics) {
+                case FAST -> GraphicsPreset.FAST;
+                case FANCY -> GraphicsPreset.FANCY;
+                case FABULOUS -> GraphicsPreset.FABULOUS;
             });
         }
         if (p.particles != null) {

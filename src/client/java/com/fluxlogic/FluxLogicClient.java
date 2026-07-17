@@ -11,9 +11,10 @@ import com.fluxlogic.presets.PresetManager;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -53,19 +54,23 @@ public final class FluxLogicClient implements ClientModInitializer {
         ConfigManager.LOG.info("[FluxLogic] Initialised. Neighbours: {}", ModCompat.summary());
 
         // Unbound by default — set a key in Controls, or use Mod Menu if present.
-        openConfigKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        // 26.x: categories are registered objects (lang key "key.category.<ns>.<path>").
+        KeyMapping.Category category = KeyMapping.Category.register(
+                Identifier.fromNamespaceAndPath(MOD_ID, "main"));
+        openConfigKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.fluxlogic.open_config",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
-                "key.categories.fluxlogic"));
+                category));
 
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
     }
 
     private void onClientTick(Minecraft mc) {
         // Open the settings screen on keypress (works even at the main menu).
+        // 26.x: the current screen moved behind Minecraft#gui.
         while (openConfigKey != null && openConfigKey.consumeClick()) {
-            mc.setScreen(new FluxConfigScreen(mc.screen));
+            mc.gui.setScreen(new FluxConfigScreen(mc.gui.screen()));
         }
 
         if (mc.player == null || mc.level == null) {
