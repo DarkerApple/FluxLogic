@@ -98,6 +98,7 @@ tasks.withType(JavaCompile).configureEach {
 
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.archivesName.get()}" }
+        // archivesName lives on the `base` extension, not the project.
+        rename { "${it}_${project.base.archivesName.get()}" }
     }
 }
