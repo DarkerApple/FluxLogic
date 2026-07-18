@@ -53,7 +53,7 @@ public final class StutterSleuth {
     /** Where a hitch's time most plausibly went. */
     enum Cause {
         EVENT_POLL, PRESENT_VSYNC, GC_PAUSE, OUTSIDE_OS, CHUNKS, NARRATOR_AUDIO,
-        IO, FPS_LIMITER, NATIVE_MEM, UNKNOWN
+        IO, NETWORK, CLASSLOAD, PARSE, FPS_LIMITER, NATIVE_MEM, UNKNOWN
     }
 
     private static final long PROBE_INTERVAL_NANOS = 30_000_000_000L;
@@ -254,8 +254,21 @@ public final class StutterSleuth {
             if (s.contains("memoryutil") || s.contains("cleaner") || s.contains("allocat")) {
                 return Cause.NATIVE_MEM;
             }
-            if (s.contains("files.") || s.contains("fileinput") || s.contains("filechannel")
-                    || s.contains("socketread") || s.contains("gson")) {
+            if (s.contains("socket") || s.contains("net.poll") || s.contains("httpclient")
+                    || s.contains("inetaddress")) {
+                return Cause.NETWORK;
+            }
+            if (s.contains("mixintransformer") || s.contains("classwriter")
+                    || s.contains("defineclass") || s.contains("classloader")
+                    || s.contains("knotclassdelegate")) {
+                return Cause.CLASSLOAD;
+            }
+            if (s.contains("codec") || s.contains("gson") || s.contains("json")
+                    || s.contains("nbt")) {
+                return Cause.PARSE;
+            }
+            if (s.contains("zipfile") || s.contains("jarfile") || s.contains("files.")
+                    || s.contains("fileinput") || s.contains("filechannel")) {
                 return Cause.IO;
             }
         }
