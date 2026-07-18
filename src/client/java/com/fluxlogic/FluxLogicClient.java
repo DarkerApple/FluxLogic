@@ -1,6 +1,7 @@
 package com.fluxlogic;
 
 import com.fluxlogic.config.ConfigManager;
+import com.fluxlogic.diag.StutterSleuth;
 import com.fluxlogic.gui.FluxConfigScreen;
 import com.fluxlogic.input.MouseDeStutter;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -24,11 +25,16 @@ public final class FluxLogicClient implements ClientModInitializer {
     public static final String MOD_ID = "fluxlogic";
 
     private static final MouseDeStutter DE_STUTTER = new MouseDeStutter();
+    private static final StutterSleuth SLEUTH = new StutterSleuth();
 
     private static KeyMapping openConfigKey;
 
     public static MouseDeStutter deStutter() {
         return DE_STUTTER;
+    }
+
+    public static StutterSleuth sleuth() {
+        return SLEUTH;
     }
 
     @Override

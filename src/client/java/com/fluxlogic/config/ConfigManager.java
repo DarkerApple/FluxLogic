@@ -117,6 +117,9 @@ public final class ConfigManager {
         if (cfg.workarounds == null) {
             cfg.workarounds = new FluxConfig.Workarounds();
         }
+        if (cfg.sleuth == null) {
+            cfg.sleuth = new FluxConfig.Sleuth();
+        }
         return cfg;
     }
 

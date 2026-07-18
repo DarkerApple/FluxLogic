@@ -5,7 +5,9 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "MouseStutterMixin",
-    "NarratorInitMixin"
+    "NarratorInitMixin",
+    "SleuthFrameMixin",
+    "SleuthPollMixin"
   ],
   "injectors": {
     "defaultRequire": 1

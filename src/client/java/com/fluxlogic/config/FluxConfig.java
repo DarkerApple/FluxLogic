@@ -11,6 +11,7 @@ public final class FluxConfig {
     public int configVersion = 3;
 
     public Input input = new Input();
+    public Sleuth sleuth = new Sleuth();
     public Workarounds workarounds = new Workarounds();
 
     public static final class Input {
@@ -30,6 +31,18 @@ public final class FluxConfig {
          * hook ever fails to apply. Clamped to 125–8000.
          */
         public int maxPollsPerSecond = 1000;
+    }
+
+    /** "Stutter Sleuth" — per-hitch frame forensics (see diag/StutterSleuth). */
+    public static final class Sleuth {
+        /** Master switch. On by default: negligible overhead, high signal. */
+        public boolean enabled = true;
+
+        /** A frame period at or above this many ms counts as a hitch. */
+        public int hitchThresholdMs = 45;
+
+        /** Write a summary to the log + logs/fluxlogic-sleuth.txt this often. */
+        public int reportEverySeconds = 60;
     }
 
     /** Opt-in workarounds for platform bugs. All off by default. */

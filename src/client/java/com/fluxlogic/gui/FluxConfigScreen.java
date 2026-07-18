@@ -45,6 +45,11 @@ public final class FluxConfigScreen extends Screen {
                         (btn, val) -> cfg.workarounds.disableNarrator = val));
         y += gap;
 
+        addRenderableWidget(CycleButton.onOffBuilder(cfg.sleuth.enabled)
+                .create(x, y, w, 20, Component.literal("Stutter Sleuth (hitch forensics)"),
+                        (btn, val) -> cfg.sleuth.enabled = val));
+        y += gap;
+
         addRenderableWidget(Button.builder(Component.literal("Open config file…"), b -> openConfig())
                 .bounds(x, y, w, 20).build());
         y += gap + 6;
