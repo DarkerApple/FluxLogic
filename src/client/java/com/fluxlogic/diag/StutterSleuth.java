@@ -84,10 +84,33 @@ public final class StutterSleuth {
     private final List<String> hitchDetails = new ArrayList<>();
 
     // --- environment counters ----------------------------------------------
-    private final List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+    // Pause-type collectors (G1 Young/Old, ZGC Pauses) stop the world; cycle-
+    // type (G1 Concurrent, ZGC Cycles) run alongside the game. Splitting them
+    // keeps ZGC's long-but-concurrent cycles from being misread as pauses,
+    // while still exposing cycle activity (CPU/paging contention) per window.
+    private final List<GarbageCollectorMXBean> gcBeans = new ArrayList<>();
+    private final List<GarbageCollectorMXBean> concurrentGcBeans = new ArrayList<>();
+    {
+        for (GarbageCollectorMXBean b : ManagementFactory.getGarbageCollectorMXBeans()) {
+            String n = b.getName().toLowerCase(Locale.ROOT);
+            if (n.contains("cycles") || n.contains("concurrent")) {
+                concurrentGcBeans.add(b);
+            } else {
+                gcBeans.add(b);
+            }
+        }
+    }
     private long lastGcTimeMs;
     private long lastGcCount;
     private long windowStartSwapUsed = -1;
+    private long windowStartGcPauseMs = -1;
+    private long windowStartGcPauseCount;
+    private long windowStartGcConcMs;
+
+    // Cold-page canary: rarely-touched heap pages whose access latency exposes
+    // OS paging/compression of JVM memory. Resident ~0.1us; paged 20-500us+.
+    private byte[] residencyArena;
+    private long residencyBlackhole;
 
     // --- allocation-rate meter ----------------------------------------------
     private long windowStartRenderAllocBytes = -1;
@@ -159,6 +182,9 @@ public final class StutterSleuth {
             lastGcTimeMs = totalGcTimeMs();
             lastGcCount = totalGcCount();
             windowStartSwapUsed = swapUsedBytes();
+            windowStartGcPauseMs = lastGcTimeMs;
+            windowStartGcPauseCount = lastGcCount;
+            windowStartGcConcMs = totalConcurrentGcMs();
         }
         frames++;
         frameNanosSum += periodNanos;
@@ -294,6 +320,13 @@ public final class StutterSleuth {
             causeCounts.forEach((c, n) -> sb.append(c).append('=').append(n).append(' '));
         }
 
+        if (windowStartGcPauseMs >= 0) {
+            sb.append(String.format(Locale.ROOT, "| gcPause %dms(%d) gcConc %dms ",
+                    totalGcTimeMs() - windowStartGcPauseMs,
+                    totalGcCount() - windowStartGcPauseCount,
+                    totalConcurrentGcMs() - windowStartGcConcMs));
+        }
+
         Runtime rt = Runtime.getRuntime();
         long heapUsedMb = (rt.totalMemory() - rt.freeMemory()) >> 20;
         long heapMaxMb = rt.maxMemory() >> 20;
@@ -322,6 +355,9 @@ public final class StutterSleuth {
             sb.append(String.format(Locale.ROOT, " swapUsed %dMB (%+dMB)", swapUsed >> 20, delta >> 20));
         }
 
+        appendCpuLoads(sb);
+        appendResidencyProbe(sb);
+
         if (probeBaselineNanos != Long.MAX_VALUE && lastProbeNanos > 0) {
             double slowdown = (double) lastProbeNanos / (double) probeBaselineNanos;
             sb.append(String.format(Locale.ROOT, " | cpuProbe %.2fx of launch", slowdown));
@@ -349,6 +385,63 @@ public final class StutterSleuth {
         causeCounts.clear();
         hitchDetails.clear();
         windowStartSwapUsed = swapUsed;
+        windowStartGcPauseMs = totalGcTimeMs();
+        windowStartGcPauseCount = totalGcCount();
+        windowStartGcConcMs = totalConcurrentGcMs();
+    }
+
+    private void appendCpuLoads(StringBuilder sb) {
+        try {
+            com.sun.management.OperatingSystemMXBean os =
+                    (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+            double proc = os.getProcessCpuLoad();
+            double sys = os.getCpuLoad();
+            if (proc >= 0 || sys >= 0) {
+                sb.append(String.format(Locale.ROOT, " | cpu proc %.0f%% sys %.0f%%",
+                        proc * 100.0, sys * 100.0));
+            }
+        } catch (Throwable ignored) {
+            // best-effort
+        }
+    }
+
+    /**
+     * Touch a handful of random pages in a rarely-used 64MB heap arena and
+     * time them. Resident RAM answers in ~0.1us; pages the OS compressed or
+     * swapped answer in tens-to-hundreds of us. An unambiguous, in-process
+     * "is my memory actually in RAM?" detector — runs once per report window.
+     */
+    private void appendResidencyProbe(StringBuilder sb) {
+        try {
+            if (residencyArena == null) {
+                residencyArena = new byte[64 << 20];
+            }
+            java.util.Random rnd = new java.util.Random();
+            int pages = residencyArena.length >> 12;
+            int touches = 64;
+            long acc = 0;
+            long start = System.nanoTime();
+            for (int i = 0; i < touches; i++) {
+                acc += residencyArena[rnd.nextInt(pages) << 12];
+            }
+            long perTouchNanos = (System.nanoTime() - start) / touches;
+            residencyBlackhole += acc;
+            sb.append(String.format(Locale.ROOT, " | coldPage %.1fus/touch", perTouchNanos / 1000.0));
+            if (perTouchNanos > 20_000) {
+                sb.append(" << JVM MEMORY IS PAGED/COMPRESSED BY THE OS");
+            }
+        } catch (Throwable ignored) {
+            // best-effort (e.g. arena allocation failed on a tiny heap)
+        }
+    }
+
+    private long totalConcurrentGcMs() {
+        long t = 0;
+        for (GarbageCollectorMXBean b : concurrentGcBeans) {
+            long v = b.getCollectionTime();
+            if (v > 0) t += v;
+        }
+        return t;
     }
 
     private void announceOnce() {
