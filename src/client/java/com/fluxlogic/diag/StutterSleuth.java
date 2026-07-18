@@ -89,6 +89,9 @@ public final class StutterSleuth {
     private long lastGcCount;
     private long windowStartSwapUsed = -1;
 
+    // --- allocation-rate meter ----------------------------------------------
+    private long windowStartRenderAllocBytes = -1;
+
     // --- CPU probe ----------------------------------------------------------
     private long probeBaselineNanos = Long.MAX_VALUE;
     private int probeWarmups;
@@ -297,6 +300,18 @@ public final class StutterSleuth {
         sb.append(String.format(Locale.ROOT, "| heap %d/%dMB directBuf %dMB",
                 heapUsedMb, heapMaxMb, directBufferBytes() >> 20));
 
+        // Allocation storm detector: bytes the render thread allocated this
+        // window. Hundreds of MB/s = the GC-sawtooth stutter driver.
+        long allocNow = renderThreadAllocatedBytes();
+        if (allocNow >= 0 && windowStartRenderAllocBytes >= 0 && seconds > 0) {
+            double mbPerSec = ((allocNow - windowStartRenderAllocBytes) / seconds) / (1 << 20);
+            sb.append(String.format(Locale.ROOT, " | alloc(render) %.0fMB/s", mbPerSec));
+            if (mbPerSec >= 300) {
+                sb.append(" << ALLOCATION STORM (drives the GC sawtooth)");
+            }
+        }
+        windowStartRenderAllocBytes = allocNow;
+
         long swapUsed = swapUsedBytes();
         long freeRam = freePhysicalBytes();
         if (freeRam >= 0) {
@@ -478,6 +493,21 @@ public final class StutterSleuth {
             long total = os.getTotalSwapSpaceSize();
             long free = os.getFreeSwapSpaceSize();
             return total < 0 || free < 0 ? -1 : total - free;
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
+    /** Total bytes ever allocated by the render thread, or -1 if unsupported. */
+    private long renderThreadAllocatedBytes() {
+        try {
+            Thread rt = renderThread;
+            if (rt == null) {
+                return -1;
+            }
+            com.sun.management.ThreadMXBean tb =
+                    (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
+            return tb.getThreadAllocatedBytes(rt.threadId());
         } catch (Throwable t) {
             return -1;
         }
