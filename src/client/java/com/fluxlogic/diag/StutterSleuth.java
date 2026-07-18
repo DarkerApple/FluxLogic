@@ -352,13 +352,38 @@ public final class StutterSleuth {
     }
 
     private void announceOnce() {
-        if (!announced) {
-            announced = true;
-            ConfigManager.LOG.info(
-                    "[FluxLogic/Sleuth] Frame forensics active (threshold {}ms). Reports every {}s"
-                            + " to the log and logs/fluxlogic-sleuth.txt",
-                    ConfigManager.get().sleuth.hitchThresholdMs,
-                    ConfigManager.get().sleuth.reportEverySeconds);
+        if (announced) {
+            return;
+        }
+        announced = true;
+        ConfigManager.LOG.info(
+                "[FluxLogic/Sleuth] Frame forensics active (threshold {}ms). Reports every {}s"
+                        + " to the log and logs/fluxlogic-sleuth.txt",
+                ConfigManager.get().sleuth.hitchThresholdMs,
+                ConfigManager.get().sleuth.reportEverySeconds);
+        // Ground truth of what this JVM is ACTUALLY running with — so "did the
+        // launcher apply my -Xmx/GC change?" is answerable from the report.
+        try {
+            List<String> flags = new ArrayList<>();
+            for (String a : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (a.startsWith("-Xm") || a.contains("UseZGC") || a.contains("UseG1")
+                        || a.contains("UseShenandoah") || a.contains("GCPause")
+                        || a.contains("NewSize") || a.contains("HeapRegion")) {
+                    flags.add(a);
+                }
+            }
+            List<String> gcs = new ArrayList<>();
+            for (GarbageCollectorMXBean b : gcBeans) {
+                gcs.add(b.getName());
+            }
+            String env = String.format(Locale.ROOT,
+                    "env: maxHeap=%dMB gc=%s memFlags=%s cpus=%d",
+                    Runtime.getRuntime().maxMemory() >> 20, gcs, flags,
+                    Runtime.getRuntime().availableProcessors());
+            ConfigManager.LOG.info("[FluxLogic/Sleuth] {}", env);
+            appendToReportFile(List.of(timestamp() + ' ' + env));
+        } catch (Throwable t) {
+            // best-effort
         }
     }
 
